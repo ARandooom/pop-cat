@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fa">
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Pop Cat Voice Control</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #00b31e;
+        }
+        img {
+            width: 500px; /* سایز گربه */
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <img id="popcat" src="closed.png" alt="Pop Cat">
+
+    <script>
+        const img = document.getElementById('popcat');
+        const closedImg = "closed.png"; // آدرس عکس دهان بسته
+        const openImg = "open.png";     // آدرس عکس دهان باز
+
+        async function startVoiceControl() {
+            try {
+                // درخواست دسترسی به میکروفون
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                const microphone = audioContext.createMediaStreamSource(stream);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                microphone.connect(analyser);
+
+                function update() {
+                    analyser.getByteFrequencyData(dataArray);
+                    
+                    // محاسبه میانگین بلندی صدا
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        sum += dataArray[i];
+                    }
+                    let average = sum / bufferLength;
+
+                    // حساسیت صدا (عدد 20 را می‌توانید کم و زیاد کنید)
+                    if (average > 35) {
+                        img.src = openImg;
+                    } else {
+                        img.src = closedImg;
+                    }
+
+                    requestAnimationFrame(update);
+                }
+
+                update();
+            } catch (err) {
+                console.error("خطا در دسترسی به میکروفون:", err);
+                alert("لطفاً دسترسی به میکروفون را تایید کنید.");
+            }
+        }
+
+        // شروع با اولین کلیک روی صفحه (قانون مرورگرها)
+        window.onclick = () => {
+            startVoiceControl();
+            console.log("صدا فعال شد!");
+        };
+    </script>
+</body>
+</html>
